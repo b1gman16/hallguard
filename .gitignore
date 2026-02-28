@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Firebase / secrets (DO NOT COMMIT)
+*serviceAccount*.json
+firebase*.json
+.env
+
+# Models / datasets (usually huge)
+*.pt
+*.onnx
+*.tflite
+datasets/
+runs/

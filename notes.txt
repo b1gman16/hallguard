@@ -1,0 +1,2 @@
+"yolo": {
+    "model_path": "yolov8n.pt", //change to "model_path: "runs/detect/train/weights/best.pt" when training
