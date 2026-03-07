@@ -26,3 +26,7 @@ firebase*.json
 *.tflite
 datasets/
 runs/
+
+# Tests
+*.jpg
+test_dual_cam.py
