@@ -2,8 +2,8 @@
   "location_id": "bedroom-test",
 
   "cameras": {
-    "cam0_id": 0,
-    "cam2_id": 2,
+    "cam0_id": "/dev/video0",
+    "cam2_id": "/dev/video8",
     "width": 640,
     "height": 480
   },
@@ -43,7 +43,7 @@
   },
 
   "ui": {
-    "show_windows": true,
+    "show_windows": false,
     "draw_roi": true,
     "show_fusion_overlay": true
   }
