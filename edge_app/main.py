@@ -235,6 +235,8 @@ def main():
                         "handoff": payload.get("handoff", False),
                         "client_time": payload.get("client_time", time.time()),
                         "updated_at": now_iso,
+			"online_camera_count": 2,
+			"total_camera_count": 2,
                     }
 
                     firebase.set_doc("status", "current", live_status, merge=True)
