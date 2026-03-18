@@ -169,6 +169,8 @@ def main():
 
     print("[INFO] HallGuard main running. Press Q to quit.")
 
+    last_notified_event_id = None
+
     try:
         while True:
             f0 = cam0.read()
@@ -198,7 +200,12 @@ def main():
             if alarm_enabled and fused_status == "started":
                 alarm.trigger()
 
-            if firebase_enabled and firebase is not None and fused_status in ("started", "ended") and fused_event is not None:
+            if (
+                firebase_enabled
+                and firebase is not None
+                and fused_status in ("started", "ended")
+                and fused_event is not None
+            ):
                 payload = {
                     "event_id": fused_event.get("event_id"),
                     "status": fused_status,
@@ -235,12 +242,36 @@ def main():
                         "handoff": payload.get("handoff", False),
                         "client_time": payload.get("client_time", time.time()),
                         "updated_at": now_iso,
-			"online_camera_count": 2,
-			"total_camera_count": 2,
+                        "online_camera_count": 2,
+                        "total_camera_count": 2,
                     }
 
                     firebase.set_doc("status", "current", live_status, merge=True)
                     print("[FIREBASE] queued status/current:", live_status["state"])
+
+                    if fused_status == "started":
+                        current_event_id = str(payload["event_id"])
+                        if current_event_id != last_notified_event_id:
+                            firebase.send_topic_notification(
+                                topic="hallguard_alerts",
+                                title="Unsafe event detected",
+                                body=f"HallGuard alert at {location_id}",
+                                data={
+                                    "type": "unsafe_event_started",
+                                    "event_id": current_event_id,
+                                    "location_id": location_id,
+                                    "status": "started",
+                                    "title": "Unsafe event detected",
+                                    "body": f"HallGuard alert at {location_id}",
+                                },
+                            )
+                            last_notified_event_id = current_event_id
+                            print("[FIREBASE] queued FCM notification:", current_event_id)
+
+                    elif fused_status == "ended":
+                        ended_event_id = str(payload["event_id"])
+                        if ended_event_id == last_notified_event_id:
+                            last_notified_event_id = None
 
                 except Exception as e:
                     print(f"[WARN] Firebase queue failed: {e}")

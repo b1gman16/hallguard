@@ -6,7 +6,7 @@ import threading
 import queue
 
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, messaging
 
 
 class FirebaseLogger:
@@ -16,7 +16,7 @@ class FirebaseLogger:
         self.available = False
 
         # Keep queue very small so Firebase can never build pressure on the main app.
-        self._queue = queue.Queue(maxsize=2)
+        self._queue = queue.Queue(maxsize=4)
         self._stop_event = threading.Event()
 
         path = Path(service_account_path)
@@ -55,8 +55,15 @@ class FirebaseLogger:
                         task["data"],
                         task.get("merge", True),
                     )
+                elif task["kind"] == "send_topic_notification":
+                    self._send_topic_notification_now(
+                        topic=task["topic"],
+                        title=task["title"],
+                        body=task["body"],
+                        data=task.get("data"),
+                    )
             except Exception as e:
-                print(f"[WARN] Firebase worker write failed: {e}")
+                print(f"[WARN] Firebase worker task failed: {e}")
             finally:
                 self._queue.task_done()
 
@@ -72,6 +79,32 @@ class FirebaseLogger:
 
     def _set_doc_now(self, collection: str, doc_id: str, data: dict, merge: bool = True):
         self.db.collection(collection).document(doc_id).set(data, merge=merge)
+
+    def _send_topic_notification_now(
+        self,
+        topic: str,
+        title: str,
+        body: str,
+        data: Optional[Dict[str, Any]] = None,
+    ):
+        payload_data = {}
+        if data:
+            payload_data = {str(k): str(v) for k, v in data.items()}
+
+        message = messaging.Message(
+            topic=topic,
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+            ),
+            data=payload_data,
+            android=messaging.AndroidConfig(
+                priority="high",
+            ),
+        )
+
+        response = messaging.send(message)
+        print(f"[FIREBASE] notification sent to topic '{topic}': {response}")
 
     def _enqueue_latest(self, task: dict):
         if not self.available:
@@ -111,6 +144,21 @@ class FirebaseLogger:
             "doc_id": doc_id,
             "data": data,
             "merge": merge,
+        })
+
+    def send_topic_notification(
+        self,
+        topic: str,
+        title: str,
+        body: str,
+        data: Optional[Dict[str, Any]] = None,
+    ):
+        self._enqueue_latest({
+            "kind": "send_topic_notification",
+            "topic": topic,
+            "title": title,
+            "body": body,
+            "data": data or {},
         })
 
     def shutdown(self):
