@@ -120,7 +120,10 @@ def main():
 
     alarm_cfg = cfg.get("alarm", {})
     alarm_enabled = bool(alarm_cfg.get("enabled", True))
-    alarm = Alarm(cooldown_s=float(alarm_cfg.get("cooldown_s", 5.0)))
+    alarm = Alarm(
+        cooldown_s=float(alarm_cfg.get("cooldown_s", 5.0)),
+        audio_path=str(ROOT / alarm_cfg.get("audio_path", "assets/voice_alarm.mp3")),
+    )
 
     fb_cfg = cfg.get("firebase", {})
     firebase_enabled = bool(fb_cfg.get("enabled", False))

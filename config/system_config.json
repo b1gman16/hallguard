@@ -32,9 +32,10 @@
   },
 
   "alarm": {
-    "enabled": true,
-    "cooldown_s": 5.0
-  },
+  "enabled": true,
+  "cooldown_s": 5.0,
+  "audio_path": "assets/voice_alarm.mp3"
+},
 
   "firebase": {
     "enabled": true,
