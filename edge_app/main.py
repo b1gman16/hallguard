@@ -300,7 +300,7 @@ def main():
 
             cv2.putText(
                 f0,
-                f"person_in_roi: {unsafe0_seen}",
+                f"unsafe_in_roi: {unsafe0_seen}",
                 (10, 60),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.7,
@@ -309,7 +309,7 @@ def main():
             )
             cv2.putText(
                 f2,
-                f"person_in_roi: {unsafe2_seen}",
+                f"unsafe_in_roi: {unsafe2_seen}",
                 (10, 60),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.7,
@@ -325,8 +325,22 @@ def main():
                 draw_fusion_overlay(f2, fused_event)
 
             if show_windows:
-                cv2.imshow("HallGuard - Camera 0", f0)
-                cv2.imshow("HallGuard - Camera 2 (DroidCam)", f2)
+                # Make sure both frames have the same height
+                if f0.shape[0] != f2.shape[0]:
+                    target_h = min(f0.shape[0], f2.shape[0])
+
+                    scale0 = target_h / f0.shape[0]
+                    scale2 = target_h / f2.shape[0]
+
+                    f0_disp = cv2.resize(f0, (int(f0.shape[1] * scale0), target_h))
+                    f2_disp = cv2.resize(f2, (int(f2.shape[1] * scale2), target_h))
+                else:
+                    f0_disp = f0
+                    f2_disp = f2
+
+                combined = cv2.hconcat([f0_disp, f2_disp])
+
+                cv2.imshow("HallGuard - Combined View", combined)
 
                 key = cv2.waitKey(1) & 0xFF
                 if key in (ord("q"), ord("Q")):
