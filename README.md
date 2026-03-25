@@ -10,5 +10,7 @@ IoT and AI-based hallway railing hazard detection system.
 - results/  : evaluation outputs
 
 ## How to run
-1. Activate venv "venv\Scripts\activate"
-2. python edge_app/main.py
+1. python3 edge_app/main.py
+
+## To record
+1. Run python record_both_picam.py
