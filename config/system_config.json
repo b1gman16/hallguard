@@ -14,7 +14,7 @@
   },
 
   "yolo": {
-    "model_path": "yolov8n.pt",
+    "model_path": "best.pt",
     "conf": 0.35,
     "person_class_id": 0
   },
