@@ -75,7 +75,7 @@ def select_and_save(camera_id, filename):
 
 def main():
     select_and_save(0, "roi_cam0.json")
-    select_and_save(2, "roi_cam2.json")
+    select_and_save(1, "roi_cam2.json")
 
 if __name__ == "__main__":
     main()

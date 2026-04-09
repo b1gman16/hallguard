@@ -50,18 +50,38 @@ while time.time() - start < duration:
         if frame1 is not None:
             out1.write(frame1)
 
+        # preview window
+        if frame0 is not None and frame1 is not None:
+            if frame0.shape[0] != frame1.shape[0]:
+                target_h = min(frame0.shape[0], frame1.shape[0])
+                scale0 = target_h / frame0.shape[0]
+                scale1 = target_h / frame1.shape[0]
+                f0_disp = cv2.resize(frame0, (int(frame0.shape[1] * scale0), target_h))
+                f1_disp = cv2.resize(frame1, (int(frame1.shape[1] * scale1), target_h))
+            else:
+                f0_disp = frame0
+                f1_disp = frame1
+
+            combined = cv2.hconcat([f0_disp, f1_disp])
+            cv2.imshow("Recording Preview", combined)
+
         frames_written += 1
         next_frame_time += frame_interval
     else:
         time.sleep(0.001)
 
+    key = cv2.waitKey(1) & 0xFF
+    if key in (ord("q"), ord("Q")):
+        break
+
 cam0.release()
 cam1.release()
 out0.release()
 out1.release()
+cv2.destroyAllWindows()
 
 actual_duration = time.time() - start
-print(f"Saved cam0_test.avi and cam1_test.avi")
+print("Saved cam0_test.avi and cam1_test.avi")
 print(f"Frames written: {frames_written}")
 print(f"Actual duration: {actual_duration:.2f} seconds")
 print(f"Effective write FPS: {frames_written / actual_duration:.2f}")
