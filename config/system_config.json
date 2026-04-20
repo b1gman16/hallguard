@@ -16,7 +16,8 @@
   "yolo": {
     "model_path": "best.pt",
     "conf": 0.35,
-    "person_class_id": 0
+    "person_class_id": 0,
+    "imgsz": 320
   },
 
   "decision": {
@@ -46,6 +47,6 @@
   "ui": {
     "show_windows": true,
     "draw_roi": true,
-    "show_fusion_overlay": true
+    "show_fusion_overlay": false
   }
 }

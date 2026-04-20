@@ -105,6 +105,7 @@ def main():
     )
     conf = float(yolo_cfg.get("conf", 0.35))
     person_class_id = int(yolo_cfg.get("person_class_id", 0))
+    imgsz = int(yolo_cfg.get("imgsz", 320))
 
     dec_cfg = cfg["decision"]
     unsafe_on = int(dec_cfg.get("unsafe_on_count", 3))
@@ -164,8 +165,9 @@ def main():
         print("[ERROR] Missing ROI(s). Run save_roi.py to create ROI files.")
         return
 
-    detector = YoloDetector(model_path=model_path, conf=conf)
+    detector = YoloDetector(model_path=model_path, conf=conf, imgsz=imgsz)
     print("[INFO] YOLO model:", model_path)
+    print("[INFO] YOLO imgsz:", imgsz)
 
     dec0 = SafetyDecision(unsafe_on_count=unsafe_on, safe_on_count=safe_on)
     dec2 = SafetyDecision(unsafe_on_count=unsafe_on, safe_on_count=safe_on)
@@ -173,6 +175,12 @@ def main():
     print("[INFO] HallGuard main running. Press Q to quit.")
 
     last_notified_event_id = None
+
+    frame_idx = 0
+    last_dets0, last_dets2 = [], []
+
+    infer_last_time = time.time()
+    infer_fps_smooth = 0.0
 
     try:
         while True:
@@ -189,8 +197,46 @@ def main():
             crop0, ox0, oy0 = safe_crop(f0, roi0)
             crop2, ox2, oy2 = safe_crop(f2, roi2)
 
-            dets0 = detector.detect(crop0) if crop0 is not None else []
-            dets2 = detector.detect(crop2) if crop2 is not None else []
+            run_infer = (frame_idx % 2 == 0)
+
+            if run_infer:
+                inputs = []
+                map_idx = []
+
+                if crop0 is not None:
+                    inputs.append(crop0)
+                    map_idx.append(0)
+                if crop2 is not None:
+                    inputs.append(crop2)
+                    map_idx.append(1)
+
+                dets0, dets2 = [], []
+
+                if inputs:
+                    outs = detector.detect_batch(inputs)
+                    for idx, dets in zip(map_idx, outs):
+                        if idx == 0:
+                            dets0 = dets
+                        else:
+                            dets2 = dets
+
+                infer_now = time.time()
+                infer_dt = infer_now - infer_last_time
+                if infer_dt > 0:
+                    infer_fps = 1.0 / infer_dt
+                    infer_fps_smooth = (
+                        infer_fps
+                        if infer_fps_smooth == 0.0
+                        else (0.9 * infer_fps_smooth + 0.1 * infer_fps)
+                    )
+                infer_last_time = infer_now
+
+                last_dets0, last_dets2 = dets0, dets2
+            else:
+                dets0 = last_dets0 if crop0 is not None else []
+                dets2 = last_dets2 if crop2 is not None else []
+
+            frame_idx += 1
 
             unsafe0_seen = has_person(dets0, person_class_id=person_class_id)
             unsafe2_seen = has_person(dets2, person_class_id=person_class_id)
@@ -281,7 +327,7 @@ def main():
 
             cv2.putText(
                 f0,
-                f"Cam{cam0_id} FPS: {cam0.fps:.1f}",
+                "HallGuard Live",
                 (10, 30),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.8,
@@ -290,7 +336,7 @@ def main():
             )
             cv2.putText(
                 f2,
-                f"Cam{cam2_id} FPS: {cam2.fps:.1f}",
+                "HallGuard Live",
                 (10, 30),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.8,
@@ -300,7 +346,7 @@ def main():
 
             cv2.putText(
                 f0,
-                f"unsafe_in_roi: {unsafe0_seen}",
+                f"Infer FPS: {infer_fps_smooth:.1f}",
                 (10, 60),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.7,
@@ -309,7 +355,7 @@ def main():
             )
             cv2.putText(
                 f2,
-                f"unsafe_in_roi: {unsafe2_seen}",
+                f"Infer FPS: {infer_fps_smooth:.1f}",
                 (10, 60),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.7,
@@ -317,15 +363,39 @@ def main():
                 2,
             )
 
-            draw_status(f0, status0)
-            draw_status(f2, status2)
+            cv2.putText(
+                f0,
+                f"unsafe_in_roi: {unsafe0_seen}",
+                (10, 90),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (255, 255, 255),
+                2,
+            )
+            cv2.putText(
+                f2,
+                f"unsafe_in_roi: {unsafe2_seen}",
+                (10, 90),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (255, 255, 255),
+                2,
+            )
+
+            draw_status(f0, status0, y=125)
+            draw_status(f2, status2, y=125)
 
             if show_fusion:
-                draw_fusion_overlay(f0, fused_event)
-                draw_fusion_overlay(f2, fused_event)
+                draw_fusion_overlay(f0, fused_event, y=160)
+                draw_fusion_overlay(f2, fused_event, y=160)
+
+            print(
+                f"\rInfer FPS: {infer_fps_smooth:.1f} | imgsz={imgsz} | infer={'YES' if run_infer else 'NO '}",
+                end="",
+                flush=True,
+            )
 
             if show_windows:
-                # Make sure both frames have the same height
                 if f0.shape[0] != f2.shape[0]:
                     target_h = min(f0.shape[0], f2.shape[0])
 

@@ -1,29 +1,36 @@
 from ultralytics import YOLO
 
+
 class YoloDetector:
-    def __init__(self, model_path: str = "yolov8n.pt", conf: float = 0.4):
+    def __init__(self, model_path="yolov8n.pt", conf=0.4, imgsz=320, person_class_id=0):
         self.model = YOLO(model_path)
         self.conf = conf
+        self.imgsz = imgsz
+        self.person_class_id = person_class_id
 
-    def detect(self, image_bgr):
-        """
-        Returns a list of detections:
-        [{'cls': int, 'conf': float, 'xyxy': (x1,y1,x2,y2)}, ...]
-        """
-        results = self.model.predict(image_bgr, conf=self.conf, verbose=False)
-        r = results[0]
+    def detect_batch(self, images):
+        results = self.model.predict(
+            images,
+            conf=self.conf,
+            imgsz=self.imgsz,
+            classes=[self.person_class_id],
+            max_det=2,
+            verbose=False,
+        )
 
-        dets = []
-        if r.boxes is None:
-            return dets
+        batch = []
+        for r in results:
+            dets = []
+            if r.boxes is not None:
+                for b in r.boxes:
+                    x1, y1, x2, y2 = b.xyxy[0].tolist()
+                    dets.append(
+                        {
+                            "cls": int(b.cls[0].item()),
+                            "conf": float(b.conf[0].item()),
+                            "xyxy": (int(x1), int(y1), int(x2), int(y2)),
+                        }
+                    )
+            batch.append(dets)
 
-        for b in r.boxes:
-            x1, y1, x2, y2 = b.xyxy[0].tolist()
-            conf = float(b.conf[0].item())
-            cls = int(b.cls[0].item())
-            dets.append({
-                "cls": cls,
-                "conf": conf,
-                "xyxy": (int(x1), int(y1), int(x2), int(y2)),
-            })
-        return dets
+        return batch
