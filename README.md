@@ -1,3 +1,5 @@
+
+
 # HallGuard
 
 IoT and AI-based hallway railing hazard detection system with dual camera monitoring.
@@ -23,3 +25,4 @@ Detects unsafe behavior based on trained model and custom dataset. When an unsaf
 10. Optimization
 11. Evaluation
 
+[![Watch the video](https://youtube.com)](https://youtu.be/UAh_RPUsY9g)
