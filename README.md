@@ -10,7 +10,7 @@ Detects unsafe behavior based on trained model and custom dataset. When an unsaf
 2. Sitting near railings.
 3. Standing on chairs near railings.
 
-#Development Pipeline
+# Development Pipeline
 1. System design planning
 2. Hardware setup (Raspberry Pi 5, 2 Raspberry Pi Camera Module 3, Audio Output Device)
 3. Build edge device software (Python, CV, YOLOv8n)
